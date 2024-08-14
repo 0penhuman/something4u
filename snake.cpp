@@ -1,8 +1,11 @@
 #include <iostream>
+//吃苹果还没搞，苹果是闪烁的1
 using namespace std;
-bool field[8][8];
-int t=0;//time(per 5s)
+int field[8][8];
+// int t=0;//time(per 5s)
 bool isdead=false;
+int8_t position_of_apple;
+int lengthofsnake;
 struct snake
 {
     int8_t position;//position=x<<3+y
@@ -29,7 +32,8 @@ void init_field(){//初始化活动区域
     }
 }
 void init_snake(){
-    head->position=(4<<3)+3;//这表明它位于(4,4)
+    lengthofsnake=0;
+    head->position=(4<<3)+4;//这表明它位于(4,4)
     head->direction=0;
 }
 
@@ -72,7 +76,7 @@ void turnRight(){
 
 void grow(){//body长度只与t有关
     snake* temp=head;
-    for(;temp->next!=NULL;temp=temp->next){}
+    for(;temp->next!=NULL;temp=temp->next){}//此时temp指向蛇尾
     switch (decodeDirection(temp->direction))
     {
     case -1://右
@@ -87,7 +91,7 @@ void grow(){//body长度只与t有关
         }
         break;
     case 1://左
-    if(temp->position>>3==0)isdead=1;
+    if(temp->position>>3==7)isdead=1;
             else{
             snake* body=new snake;
             body->position=temp->position-(1<<3);
@@ -97,7 +101,7 @@ void grow(){//body长度只与t有关
             body->next=NULL;}
         break;
     case 0://下
-    if(temp->position-(temp->position>>3<<3)==7)isdead=1;
+    if(temp->position-(temp->position>>3<<3)==0)isdead=1;
             else{snake* body=new snake;
             body->position=temp->position-1;
             body->direction=temp->direction;
@@ -106,7 +110,7 @@ void grow(){//body长度只与t有关
             body->next=NULL;}
         break;
     case 2://上
-        if(temp->position-(temp->position>>3<<3)==0)isdead=1;
+        if(temp->position-(temp->position>>3<<3)==7)isdead=1;
             else{
             snake* body=new snake;
             body->position=temp->position+1;
@@ -118,10 +122,33 @@ void grow(){//body长度只与t有关
         break;
     }
 }
+bool iseatapple(){
+    if(position_of_apple!=0&&head->position==position_of_apple)return 1;
+    else return 0;
+}
+void setapple(){
+    if(rand()%2==0&&iseatapple()){
+        snake* temp=head;
+        int x=rand()%6+1;//保证苹果不出现在最外层
+        int y=rand()%6+1;
+        while(temp!=NULL){//遍历到最后一个
+            if(temp->position>>3==x&&temp->position-(temp->position>>3<<3)==y)return;//该机制使得蛇越长，出现苹果的机率越低
+            else temp=temp->next;
+        }
+        position_of_apple=(x<<3)+y;
+        // field[x][y]=2;
+    }
+}
+
+
 
 void iseatbody(snake* temp){
-    if(temp==NULL)return;
+    if(temp->next==NULL){
+        // if(temp->position==head->position)isdead=1;cout<<"eat body\n";
+        return;
+    };
     if(temp!=head&&temp!=head->next&&temp->position==head->position){
+        cout<<"eat body\n";
         isdead=1;
         return;
     }
@@ -130,6 +157,7 @@ void iseatbody(snake* temp){
 
 void display(){
     snake* temp=head;
+    field[position_of_apple>>3][position_of_apple-(position_of_apple>>3<<3)]=2;
     while(temp!=NULL){
         field[temp->position>>3][temp->position-(temp->position>>3<<3)]=1;
         temp=temp->next;
@@ -140,23 +168,40 @@ void display(){
         }
         cout<<'\n';
     }
+
 }
 int main(){
     init_field();
     init_snake();
+    position_of_apple=(1<<3)+1;
+    // field[1][1]=2;
     char ch;
     grow();
-    
+    // grow();
+    // grow();
+    // grow();
+    display();
     while(!isdead){
-        display();
-        iseatbody(head);
-        goforward(head);
-        grow();
-        cin.get(ch);
+        
+        
+        
         if(ch=='r')turnRight();
         else if(ch=='l')turnLeft();
+        else goforward(head);
         system("clear");
+        setapple();
+        display();
+        if(iseatapple()){grow();setapple();}
+        cin.get(ch);
         init_field();
         head->direction%=4;
+        iseatbody(head);
     }
+    for(snake* temp=head;temp!=NULL;temp=temp->next){
+        lengthofsnake++;
+        delete temp;
+    }
+    cout<<"game over:";
+    cout<<lengthofsnake;
+    return 0;
 }
